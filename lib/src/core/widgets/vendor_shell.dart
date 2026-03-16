@@ -47,6 +47,12 @@ class _VendorShellState extends State<VendorShell> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('بوابة البائع'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none_outlined),
+            onPressed: () => context.go('/notifications'),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(

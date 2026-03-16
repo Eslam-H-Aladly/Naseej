@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../domain/entities/product.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/section_header.dart';
 import '../bloc/products_cubit.dart';
+import '../widgets/product_card.dart';
 
 class ProductsPage extends StatelessWidget {
   const ProductsPage({super.key});
@@ -16,13 +17,19 @@ class ProductsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _t('products'),
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          SectionHeader(
+            title: _t('products'),
+            subtitle: _t('products_subtitle'),
+            trailing: SizedBox(
+              height: 36,
+              child: OutlinedButton.icon(
+                onPressed: () => context.go('/products/add'),
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(_t('add_product')),
+              ),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           BlocBuilder<ProductsCubit, ProductsState>(
             builder: (context, state) {
               final total = state.filteredProducts.length;
@@ -34,6 +41,8 @@ class ProductsPage extends StatelessWidget {
               );
             },
           ),
+          const SizedBox(height: 16),
+          _StatusFilters(),
           const SizedBox(height: 16),
           _SearchField(),
           const SizedBox(height: 16),
@@ -55,11 +64,8 @@ class ProductsPage extends StatelessWidget {
                 }
 
                 if (state.filteredProducts.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'لا توجد منتجات مطابقة للبحث',
-                      style: theme.textTheme.bodyMedium,
-                    ),
+                  return const Center(
+                    child: Text('لا توجد منتجات مطابقة للبحث'),
                   );
                 }
 
@@ -69,18 +75,78 @@ class ProductsPage extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 0.7,
+                    childAspectRatio: 0.6,
                   ),
                   itemCount: state.filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = state.filteredProducts[index];
-                    return _ProductCard(product: product);
+                    return ProductCard(
+                      product: product,
+                      onTap: () => context.go('/products/${product.id}'),
+                    );
                   },
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusFilters extends StatefulWidget {
+  @override
+  State<_StatusFilters> createState() => _StatusFiltersState();
+}
+
+class _StatusFiltersState extends State<_StatusFilters> {
+  String _selected = 'all';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    void applyFilter(String status) {
+      setState(() {
+        _selected = status;
+      });
+      final productsCubit = context.read<ProductsCubit>();
+      if (status == 'all') {
+        productsCubit.search(productsCubit.state.search);
+        return;
+      }
+      if (status == 'low_stock') {
+        productsCubit.search(productsCubit.state.search);
+        return;
+      }
+      productsCubit.search(productsCubit.state.search);
+    }
+
+    final filters = <Map<String, String>>[
+      {'key': 'all', 'label': _t('all')},
+      {'key': 'active', 'label': _t('active')},
+      {'key': 'inactive', 'label': _t('inactive')},
+      {'key': 'low_stock', 'label': _t('low_stock')},
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((f) {
+          final key = f['key']!;
+          final label = f['label']!;
+          final selected = _selected == key;
+          return Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: ChoiceChip(
+              label: Text(label),
+              selected: selected,
+              onSelected: (_) => applyFilter(key),
+              selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -107,168 +173,12 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product});
-
-  final Product product;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final totalStock = product.variants.fold<int>(
-      0,
-      (sum, v) => sum + v.stock,
-    );
-    final hasLowStock =
-        product.variants.any((v) => v.stock <= 1 && v.stock > 0);
-
-    return Card(
-      elevation: 1,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {},
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFF9FAFB),
-                    Color(0xFFE5E7EB),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.checkroom_outlined,
-                  size: 36,
-                  color: Color(0xFF9CA3AF),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    product.nameEn,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(999),
-                          color: product.saleType == 'wholesale'
-                              ? theme.colorScheme.primary.withOpacity(0.1)
-                              : theme.colorScheme.secondary.withOpacity(0.3),
-                        ),
-                        child: Text(
-                          _t(product.saleType),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      if (hasLowStock)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.warning_rounded,
-                              size: 14,
-                              color: Colors.orange.shade600,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              _t('low_stock'),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.orange.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${product.price.toStringAsFixed(0)} ${_t('egp')}',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '${_t('stock')}: $totalStock',
-                            style: theme.textTheme.labelSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
-                              color: product.status == 'active'
-                                  ? Colors.green.shade50
-                                  : Colors.grey.shade200,
-                            ),
-                            child: Text(
-                              _t(product.status),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: product.status == 'active'
-                                    ? Colors.green.shade700
-                                    : Colors.grey.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 String _t(String key) {
   const map = {
     'products': 'المنتجات',
+    'products_subtitle': 'إدارة جميع منتجات متجرك بسهولة.',
+    'add_product': 'إضافة منتج',
+    'all': 'الكل',
     'total_products': 'إجمالي المنتجات',
     'search_products': 'البحث عن منتجات...',
     'retail': 'تجزئة',

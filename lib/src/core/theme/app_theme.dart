@@ -27,6 +27,7 @@ ThemeData buildLightTheme() {
       fontSize: 20,
       fontWeight: FontWeight.w700,
       height: 1.3,
+      color: const Color(0xFF3A2612), // dark brownish for titles
     ),
   );
 

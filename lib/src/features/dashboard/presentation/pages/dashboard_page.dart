@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/stat_card.dart';
 import '../bloc/dashboard_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -9,8 +10,6 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Directionality(
       textDirection: TextDirection.rtl,
       child: BlocBuilder<DashboardCubit, DashboardState>(
@@ -24,7 +23,7 @@ class DashboardPage extends StatelessWidget {
             return Center(
               child: Text(
                 'حدث خطأ في تحميل لوحة التحكم',
-                style: theme.textTheme.bodyMedium,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             );
           }
@@ -52,8 +51,6 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GridView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -66,63 +63,13 @@ class _StatsGrid extends StatelessWidget {
       itemCount: state.stats.length,
       itemBuilder: (context, index) {
         final stat = state.stats[index];
-        final isUp = stat.isUp;
 
-        return Card(
-          elevation: 1,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _translate(stat.key),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      stat.value,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (stat.suffix != null) ...[
-                      const SizedBox(width: 4),
-                      Text(
-                        stat.suffix!,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
-                ),
-                Row(
-                  children: [
-                    Icon(
-                      isUp ? Icons.arrow_outward : Icons.arrow_downward,
-                      size: 16,
-                      color: isUp
-                          ? Colors.green.shade600
-                          : theme.colorScheme.error,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      stat.change,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: isUp
-                            ? Colors.green.shade600
-                            : theme.colorScheme.error,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return StatCard(
+          title: _translate(stat.key),
+          value: stat.value,
+          suffix: stat.suffix,
+          change: stat.change,
+          trendUp: stat.isUp,
         );
       },
     );
@@ -140,142 +87,136 @@ class _RecentOrdersAndWallet extends StatelessWidget {
 
     return Column(
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _translate('recent_orders'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _translate('recent_orders'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 12),
-                ...state.recentOrders.map(
-                  (order) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              order.customerName,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${order.id} · ${order.date}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withOpacity(0.6),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${order.amount} ${_translate('egp')}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(999),
-                                color: _statusColor(order.status, theme)
-                                    .withOpacity(0.1),
-                              ),
-                              child: Text(
-                                _translate(order.status),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: _statusColor(order.status, theme),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _translate('wallet_overview'),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF92400E),
-                        Color(0xFFF59E0B),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              const SizedBox(height: 12),
+              ...state.recentOrders.map(
+                (order) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _translate('total_balance'),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            order.customerName,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${order.id} · ${order.date}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.6),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${state.walletOverview.totalBalance} ${_translate('egp')}',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${order.amount} ${_translate('egp')}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: _statusColor(order.status, theme)
+                                  .withOpacity(0.1),
+                            ),
+                            child: Text(
+                              _translate(order.status),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: _statusColor(order.status, theme),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                _WalletRow(
-                  label: _translate('pending_balance'),
-                  value:
-                      '${state.walletOverview.pendingBalance} ${_translate('egp')}',
-                  color: Colors.orange.shade600,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _translate('wallet_overview'),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 8),
-                _WalletRow(
-                  label: _translate('withdrawable'),
-                  value:
-                      '${state.walletOverview.withdrawableBalance} ${_translate('egp')}',
-                  color: Colors.green.shade600,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF92400E),
+                      Color(0xFFF59E0B),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
                 ),
-              ],
-            ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _translate('total_balance'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${state.walletOverview.totalBalance} ${_translate('egp')}',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _WalletRow(
+                label: _translate('pending_balance'),
+                value:
+                    '${state.walletOverview.pendingBalance} ${_translate('egp')}',
+                color: Colors.orange.shade600,
+              ),
+              const SizedBox(height: 8),
+              _WalletRow(
+                label: _translate('withdrawable'),
+                value:
+                    '${state.walletOverview.withdrawableBalance} ${_translate('egp')}',
+                color: Colors.green.shade600,
+              ),
+            ],
           ),
         ),
       ],
